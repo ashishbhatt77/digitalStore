@@ -1,0 +1,76 @@
+
+* {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+  font-family: Arial, sans-serif;
+}
+
+
+form {
+  width: 50%;
+  margin-top: 10px;
+}
+
+.input-group-text i {
+  font-size: 1.2em;
+  color: #6c757d;
+}
+
+
+.form-control:focus + .input-group-text {
+  display: block;
+}
+
+.navbar-nav .nav-item {
+  transition: transform 0.5s ease, color 0.5s ease;
+  color: rgb(5, 24, 122) !important;
+}
+
+.navbar-nav .nav-item:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.navbar-toggler{
+  background-color: black;
+  color: rgb(143, 204, 204);
+}
+
+
+@media (max-width: 767px) {
+
+  form {
+    margin-top: 10px;
+    width: 90%; 
+  }
+
+  .navbar-nav .nav-item {
+    text-align: center; 
+  }
+
+  .navbar-nav .nav-item a {
+    font-size: 1.2em; 
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 768px) {
+
+  form {
+    margin: 10px;
+    width: 80%; 
+  }
+
+  .navbar-nav .nav-item {
+    font-size: 1.1em; 
+  }
+}
+
+@media (min-width: 1025px) {
+  form {
+    width: 45%; 
+  }
+}
