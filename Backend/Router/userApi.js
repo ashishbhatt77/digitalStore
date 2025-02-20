@@ -12,7 +12,28 @@ const crypto = require("crypto");
 const router = express.Router();
 router.use(cookieParser());
 
-// Function to send reset email with OTP
+const sendRegistrationEmail = async (email, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Welcome! Verify Your Registration",
+    html: `<p>Hi there,</p>
+           <p>Thank you for registering. Please verify your registration using the following OTP: <strong>${otp}</strong></p>
+           <p>The OTP is valid for 5 minutes. If you did not request this, please ignore this email.</p>`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+// Function to send password reset OTP email
 const sendResetEmail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
     service: "gmail", // You can change this to your email service provider
@@ -26,13 +47,20 @@ const sendResetEmail = async (email, otp) => {
     from: process.env.EMAIL_USER,
     to: email,
     subject: "Password Reset OTP",
-    html: `<p>Your OTP for resetting the password is: <strong>${otp}</strong></p>`,
+    html: `<p>Hi,</p>
+           <p>We received a request to reset your password. Please use the following OTP to reset your password: <strong>${otp}</strong></p>
+           <p>The OTP is valid for 5 minutes. If you did not request this, please ignore this email or contact support immediately.</p>`,
   };
 
   await transporter.sendMail(mailOptions);
 };
 
-// Registration Route
+// Function to generate a 4-digit OTP
+const generateOTP = () => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
+
+// Registration Route - Includes OTP Verification
 router.post("/userRegister", async (req, res) => {
   try {
     const { name, email, mobile, pass, confirmpass } = req.body;
@@ -58,72 +86,76 @@ router.post("/userRegister", async (req, res) => {
       return res.status(400).json({ message: "User already exists." });
     }
 
-    const hashedPassword = await bcrypt.hash(pass, 10);
+    // Generate and send OTP to the user's email
+    const otp = generateOTP();
+    const otpExpiration = Date.now() + 300000; // OTP valid for 5 minutes
 
-    const newUser = new UserData({
+    // Create user without password initially and save OTP
+    const user = new UserData({
       name: name.trim(),
       email: email.trim(),
       mobile: mobile.trim(),
-      pass: hashedPassword,
+      otp: otp,
+      otpExpiration: otpExpiration,
+      pass: "", // Temporarily storing password as an empty string
     });
 
-    await newUser.save();
+    await user.save();
 
-    const newCart = new Cart({ user: newUser._id, items: [] });
-    await newCart.save();
+    // Send OTP to user's email for registration
+    await sendRegistrationEmail(email, otp);
 
-    newUser.cartId = newCart._id;
-    await newUser.save();
+    res.status(200).json({ message: "Registration OTP has been sent to your email. Please verify." });
 
-    res.status(201).json({ message: "Registration successful!" });
   } catch (error) {
     console.error("Error during registration:", error);
     res.status(500).json({ message: "Server error." });
   }
 });
 
-// Login Route
-router.post("/userLogin", async (req, res) => {
+// OTP Verification Route - To complete registration after OTP verification
+router.post("/verifyOTP", async (req, res) => {
   try {
-    const { email, mobile, pass } = req.body;
+    const { email, otp, pass, confirmpass } = req.body;
 
-    if ((!email && !mobile) || !pass) {
-      return res.status(400).json({ message: "Email/Mobile and password are required." });
+    if (!email || !otp || !pass || !confirmpass) {
+      return res.status(400).json({ message: "Email, OTP, and password are required." });
     }
 
-    const query = email
-      ? { email: email.trim() }
-      : { mobile: mobile.toString().trim() };
-
-    const user = await UserData.findOne(query);
-
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email/mobile or password." });
+    if (pass !== confirmpass) {
+      return res.status(400).json({ message: "Passwords do not match." });
     }
 
-    const isPasswordMatch = await bcrypt.compare(pass, user.pass);
-
-    if (!isPasswordMatch) {
-      return res.status(400).json({ message: "Invalid password." });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.UJWT_SECRET, { expiresIn: "1h" });
-
-    if (!process.env.UJWT_SECRET) {
-      console.error("JWT Secret is missing in environment variables.");
-      return res.status(500).json({ message: "Server error. Please contact support." });
-    }
-
-    res.cookie("token", token, {
-      httpOnly: true, 
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 1000,
-      sameSite: "Strict",
+    const user = await UserData.findOne({
+      email: email.trim(),
+      otp: otp,
+      otpExpiration: { $gt: Date.now() }, // Check if OTP is still valid
     });
 
-    res.status(200).json({ message: "Login successful!" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP." });
+    }
+
+    // Hash the user's password
+    const hashedPassword = await bcrypt.hash(pass, 10);
+
+    // Update user data with hashed password and clear OTP details
+    user.pass = hashedPassword;
+    user.otp = undefined;
+    user.otpExpiration = undefined;
+
+    await user.save();
+
+    // Create a new Cart for the user
+    const newCart = new Cart({ user: user._id, items: [] });
+    await newCart.save();
+
+    user.cartId = newCart._id;
+    await user.save();
+
+    res.status(200).json({ message: "Registration successful. Your account is now ready!" });
   } catch (error) {
-    console.error("Error during login:", error);
+    console.error("Error verifying OTP:", error);
     res.status(500).json({ message: "Server error." });
   }
 });
@@ -154,10 +186,10 @@ router.post("/userForgotPassword", async (req, res) => {
     user.otpExpiration = otpExpiration;
     await user.save();
 
-    // Send OTP via email
+    // Send OTP via email for password reset
     await sendResetEmail(email, otp);
 
-    res.status(200).json({ message: "OTP has been sent to your email." });
+    res.status(200).json({ message: "Password reset OTP has been sent to your email." });
   } catch (error) {
     console.error("Error in Forgot Password:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
@@ -180,7 +212,7 @@ router.post("/userResetPassword", async (req, res) => {
     const user = await UserData.findOne({
       email: email.trim(),
       otp: otp,
-      otpExpiration: { $gt: Date.now() }, // OTP is still valid
+      otpExpiration: { $gt: Date.now() }, 
     });
 
     if (!user) {
@@ -189,14 +221,13 @@ router.post("/userResetPassword", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Reset the password and clear OTP
     user.pass = hashedPassword;
     user.otp = undefined;
     user.otpExpiration = undefined;
 
     await user.save();
 
-    res.status(200).json({ message: "Password has been successfully reset." });
+    res.status(200).json({ message: "Password has been successfully reset. You can now log in with your new password." });
   } catch (error) {
     console.error("Error in Reset Password:", error);
     res.status(500).json({ message: "Server error. Please try again later." });

@@ -4,47 +4,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../model/businessUserSchema");
 const nodemailer = require("nodemailer");
-const crypto = require("crypto"); // This import is now unnecessary for OTP generation
 const router = express.Router();
 
-// Forgot Password Route - To initiate OTP-based password reset
-router.post("/businessUserForgotpassword", async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ message: "Email is required." });
-    }
-
-    const user = await User.findOne({ contactPersonEmail: email.trim().toLowerCase() });
-
-    if (!user) {
-      return res.status(400).json({ message: "No user found with this email." });
-    }
-
-    // Generate a 4-digit OTP using Math.random()
-    const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
-    const otpExpiration = Date.now() + 300000; // OTP valid for 5 minutes
-
-    // Save OTP and its expiration to the user record
-    user.otp = otp;
-    user.otpExpiration = otpExpiration;
-    await user.save();
-
-    // Send OTP via email
-    await sendOtpEmail(email, otp);
-
-    res.status(200).json({ message: "OTP has been sent to your email." });
-  } catch (error) {
-    console.error("Error in Forgot Password:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
-  }
-});
-
-// Helper function to send OTP email
-const sendOtpEmail = async (email, otp) => {
+const sendRegisterOtpEmail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail", // You can change this to your email service provider
+    service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
@@ -54,86 +18,55 @@ const sendOtpEmail = async (email, otp) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "Your OTP for Password Reset",
-    html: `<p>Your OTP for resetting the password is: <strong>${otp}</strong></p>`,
+    subject: "Business Registration - OTP Verification",
+    html: `<p>Dear User,</p>
+           <p>Thank you for registering your business with us! Please use the following OTP to complete your registration process:</p>
+           <h3 style="color: #4CAF50;">${otp}</h3>
+           <p>This OTP is valid for 5 minutes. Please enter it on the registration page to proceed.</p>
+           <p>If you did not request this, please ignore this email.</p>
+           <p>Best Regards,</p>
+           <p>Your Business Registration Team</p>`,
   };
 
   await transporter.sendMail(mailOptions);
 };
 
-// Reset Password Route - To reset the password using OTP
-router.post("/BusinessUserResetpassword", async (req, res) => {
-  try {
-    const { otp, newPassword, confirmNewPassword, email } = req.body;
+const sendResetPasswordOtpEmail = async (email, otp) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
 
-    if (!otp || !newPassword || !confirmNewPassword || !email) {
-      return res.status(400).json({ message: "OTP, new password, and email are required." });
-    }
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Password Reset - OTP Verification",
+    html: `<p>Dear User,</p>
+           <p>You have requested to reset your password. Please use the following OTP to reset your password:</p>
+           <h3 style="color: #FF6347;">${otp}</h3>
+           <p>This OTP is valid for 5 minutes. Please enter it on the password reset page to proceed.</p>
+           <p>If you did not request this, please ignore this email.</p>
+           <p>Best Regards,</p>
+           <p>Your Support Team</p>`,
+  };
 
-    if (newPassword !== confirmNewPassword) {
-      return res.status(400).json({ message: "Passwords do not match." });
-    }
+  await transporter.sendMail(mailOptions);
+};
 
-    // Find user based on email and check OTP validity
-    const user = await User.findOne({ contactPersonEmail: email.trim().toLowerCase() });
+let tempUserStore = {};
 
-    if (!user) {
-      return res.status(400).json({ message: "No user found with this email." });
-    }
-
-    // Check if OTP is valid and not expired
-    if (user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP." });
-    }
-
-    if (user.otpExpiration < Date.now()) {
-      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
-    }
-
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password
-    user.password = hashedPassword;
-    user.otp = undefined; // Clear OTP after successful reset
-    user.otpExpiration = undefined; // Clear OTP expiration
-    await user.save();
-
-    res.status(200).json({ message: "Password has been successfully reset." });
-  } catch (error) {
-    console.error("Error in Reset Password:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
-  }
-});
-
-// Business Registration Route
 router.post("/businessRegister", async (req, res) => {
   try {
-    let {
-      name,
-      location,
-      email,
-      category,
-      businessName,
-      registrationNumber,
-      registrationAuthority,
-      registrationDate,
-      directorName,
-      contactPersonName,
-      contactPersonEmail,
-      contactPersonDesignation,
-      contactPersonMobile,
-      password,
-      confirmpassword,
-    } = req.body;
+    let { name, location, email, category, businessName, registrationNumber, registrationAuthority, registrationDate, directorName, contactPersonName, contactPersonEmail, contactPersonDesignation, contactPersonMobile, password, confirmPassword } = req.body;
 
     email = email?.trim()?.toLowerCase() || "";
     contactPersonEmail = contactPersonEmail?.trim()?.toLowerCase() || "";
     contactPersonMobile = contactPersonMobile?.trim() || "";
 
-    if (!name || !location || !email || !category || !businessName || !registrationNumber || 
-        !registrationAuthority || !registrationDate || !directorName || !contactPersonName || 
-        !contactPersonEmail || !contactPersonDesignation || !contactPersonMobile || !password || !confirmpassword) {
+    if (!name || !location || !email || !category || !businessName || !registrationNumber || !registrationAuthority || !registrationDate || !directorName || !contactPersonName || !contactPersonEmail || !contactPersonDesignation || !contactPersonMobile || !password || !confirmPassword) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -147,52 +80,63 @@ router.post("/businessRegister", async (req, res) => {
       return res.status(400).json({ message: "Invalid mobile number format. Must be 10 digits." });
     }
 
-    if (password !== confirmpassword) {
+    if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match." });
     }
 
-    const existingUser = await User.findOne({
-      $or: [{ email }, { contactPersonMobile }],
-    });
-
+    const existingUser = await User.findOne({ $or: [{ email }, { contactPersonMobile }] });
     if (existingUser) {
       return res.status(400).json({
-        message: existingUser.email === email 
-          ? "Email is already registered. Please login." 
-          : "Mobile number is already in use.",
+        message: existingUser.email === email ? "Email is already registered. Please login." : "Mobile number is already in use.",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpExpiration = Date.now() + 300000;
 
-    const newUser = new User({
-      name,
-      location,
-      email,
-      category,
-      businessName,
-      registrationNumber,
-      registrationAuthority,
-      registrationDate,
-      directorName,
-      contactPersonName,
-      contactPersonEmail,
-      contactPersonDesignation,
-      contactPersonMobile,
-      password: hashedPassword,
-      status: "pending",
-    });
+    tempUserStore[contactPersonEmail] = {
+      name, location, email, category, businessName, registrationNumber, registrationAuthority, registrationDate, directorName, contactPersonName, contactPersonEmail, contactPersonDesignation, contactPersonMobile,
+      password: await bcrypt.hash(password, 10),
+      otp, otpExpiration,
+    };
 
-    await newUser.save();
-    res.status(201).json({ message: "Business registered successfully. Awaiting approval." });
+    await sendRegisterOtpEmail(contactPersonEmail, otp);
 
+    res.status(200).json({ message: "OTP has been sent to your email for verification." });
   } catch (error) {
     console.error("Error in Business Registration:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
 
-// Business Login Route
+router.post("/verifyOtp", async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+
+    if (!otp || !email) {
+      return res.status(400).json({ message: "OTP and email are required." });
+    }
+
+    const tempUser = tempUserStore[email.trim().toLowerCase()];
+    if (!tempUser) {
+      return res.status(400).json({ message: "No user found with this email." });
+    }
+
+    if (tempUser.otp !== otp || tempUser.otpExpiration < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP." });
+    }
+
+    const newUser = new User({ ...tempUser, status: "active" });
+    await newUser.save();
+
+    delete tempUserStore[email];
+    res.status(200).json({ message: "OTP verified successfully. Registration complete." });
+  } catch (error) {
+    console.error("Error in OTP Verification:", error);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
 router.post("/businessLogin", async (req, res) => {
   try {
     const { contactPersonEmail, contactPersonMobile, password } = req.body;
@@ -206,7 +150,6 @@ router.post("/businessLogin", async (req, res) => {
       : { contactPersonMobile: contactPersonMobile.trim() };
 
     const user = await User.findOne(userQuery);
-
     if (!user) {
       return res.status(400).json({ message: "Invalid email or mobile. User not found." });
     }
@@ -216,24 +159,81 @@ router.post("/businessLogin", async (req, res) => {
       return res.status(400).json({ message: "Invalid password." });
     }
 
-    if (!process.env.BJWT_SECRET) {
-      console.error("JWT Secret is missing in environment variables.");
-      return res.status(500).json({ message: "Server error. Please contact support." });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.BJWT_SECRET, { expiresIn: "2h" });
-
-    res.cookie("auth_token", token, {
-      httpOnly: true,  
-      secure: process.env.NODE_ENV === "production",  
-      sameSite: "Lax", 
-      maxAge: 2 * 60 * 60 * 1000,
-    });
-
+    const token = jwt.sign({ userId: user._id }, process.env.BJWT_SECRET);
     res.status(200).json({ message: "Login successful", token });
-
   } catch (error) {
     console.error("Error in Business Login:", error);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
+router.post("/businessUser/forgotPassword", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+
+    const user = await User.findOne({ contactPersonEmail: email.trim().toLowerCase() });
+
+    if (!user) {
+      return res.status(400).json({ message: "No user found with this email." });
+    }
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString(); 
+    const otpExpiration = Date.now() + 300000; 
+
+    user.otp = otp;
+    user.otpExpiration = otpExpiration;
+    await user.save();
+
+    await sendResetPasswordOtpEmail(email, otp);
+
+    res.status(200).json({ message: "OTP has been sent to your email." });
+
+  } catch (error) {
+    console.error("Error in Forgot Password:", error);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
+router.post("/businessUser/resetPassword", async (req, res) => {
+  try {
+    const { otp, newPassword, confirmNewPassword, email } = req.body;
+
+    if (!otp || !newPassword || !confirmNewPassword || !email) {
+      return res.status(400).json({ message: "OTP, new password, and email are required." });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ message: "Passwords do not match." });
+    }
+
+    const user = await User.findOne({ contactPersonEmail: email.trim().toLowerCase() });
+
+    if (!user) {
+      return res.status(400).json({ message: "No user found with this email." });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    if (user.otpExpiration < Date.now()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    user.otp = undefined;
+    user.otpExpiration = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password has been successfully reset." });
+  } catch (error) {
+    console.error("Error in Reset Password:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
