@@ -33,10 +33,9 @@ const sendRegistrationEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-// Function to send password reset OTP email
 const sendResetEmail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail", // You can change this to your email service provider
+    service: "gmail", 
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
@@ -55,13 +54,7 @@ const sendResetEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-// Function to generate a 4-digit OTP
-const generateOTP = () => {
-  return Math.floor(1000 + Math.random() * 9000).toString();
-};
-
-// Registration Route - Includes OTP Verification
-router.post("/userRegister", async (req, res) => {
+router.post("/UserRegister", async (req, res) => {
   try {
     const { name, email, mobile, pass, confirmpass } = req.body;
 
@@ -86,9 +79,9 @@ router.post("/userRegister", async (req, res) => {
       return res.status(400).json({ message: "User already exists." });
     }
 
-    // Generate and send OTP to the user's email
-    const otp = generateOTP();
-    const otpExpiration = Date.now() + 300000; // OTP valid for 5 minutes
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    const otpExpiration = Date.now() + 300000;
 
     // Create user without password initially and save OTP
     const user = new UserData({
@@ -97,7 +90,7 @@ router.post("/userRegister", async (req, res) => {
       mobile: mobile.trim(),
       otp: otp,
       otpExpiration: otpExpiration,
-      pass: "", // Temporarily storing password as an empty string
+      pass: ""
     });
 
     await user.save();
@@ -114,7 +107,7 @@ router.post("/userRegister", async (req, res) => {
 });
 
 // OTP Verification Route - To complete registration after OTP verification
-router.post("/verifyOTP", async (req, res) => {
+router.post("/UserVerifyOTP", async (req, res) => {
   try {
     const { email, otp, pass, confirmpass } = req.body;
 
@@ -161,7 +154,7 @@ router.post("/verifyOTP", async (req, res) => {
 });
 
 // Forgot Password Route - To initiate the password reset with OTP
-router.post("/userForgotPassword", async (req, res) => {
+router.post("/UserForgotPassword", async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -197,7 +190,7 @@ router.post("/userForgotPassword", async (req, res) => {
 });
 
 // Reset Password Route - To reset the password using the OTP
-router.post("/userResetPassword", async (req, res) => {
+router.post("/UserResetPassword", async (req, res) => {
   try {
     const { email, otp, newPassword, confirmNewPassword } = req.body;
 
@@ -219,7 +212,7 @@ router.post("/userResetPassword", async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP." });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassworUserDeleted = await bcrypt.hash(newPassword, 10);
 
     user.pass = hashedPassword;
     user.otp = undefined;
@@ -231,6 +224,87 @@ router.post("/userResetPassword", async (req, res) => {
   } catch (error) {
     console.error("Error in Reset Password:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
+router.post("/UserLogin", async (req, res) => {
+  try {
+    const { emailOrMobile, pass } = req.body;
+
+    if (!emailOrMobile || !pass) {
+      return res.status(400).json({ message: "Email/Mobile and Password are required." });
+    }
+
+    const user = await UserData.findOne({
+      $or: [{ email: emailOrMobile.trim() }, { mobile: emailOrMobile.trim() }],
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found. Please register first." });
+    }
+
+    const isMatch = await bcrypt.compare(pass, user.pass);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect password." });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.UJWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      message: "Login successful!",
+      userId: user._id,
+      token: token, 
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
+router.get("/UserData/:id", async (req, res) => {
+  try {
+    const user = await UserData.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+router.put("/UserUpdate/:id", async (req, res) => {
+  try {
+    const updatedUser = await UserData.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.status(200).json({ message: "User updated successfully!", updatedUser });
+  } catch (error) {
+    console.error("Error updating user data:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+router.delete("/UserDelete/:id", async (req, res) => {
+  try {
+    const deletedUser = await UserData.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.status(200).json({ message: "User deleted successfully!" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ message: "Server error." });
   }
 });
 

@@ -58,7 +58,7 @@ const sendResetPasswordOtpEmail = async (email, otp) => {
 
 let tempUserStore = {};
 
-router.post("/businessRegister", async (req, res) => {
+router.post("/BusinessRegister", async (req, res) => {
   try {
     let { name, location, email, category, businessName, registrationNumber, registrationAuthority, registrationDate, directorName, contactPersonName, contactPersonEmail, contactPersonDesignation, contactPersonMobile, password, confirmPassword } = req.body;
 
@@ -109,7 +109,7 @@ router.post("/businessRegister", async (req, res) => {
   }
 });
 
-router.post("/verifyOtp", async (req, res) => {
+router.post("BusinessUserVerifyOtp", async (req, res) => {
   try {
     const { otp, email } = req.body;
 
@@ -137,7 +137,7 @@ router.post("/verifyOtp", async (req, res) => {
   }
 });
 
-router.post("/businessLogin", async (req, res) => {
+router.post("/BusinessLogin", async (req, res) => {
   try {
     const { contactPersonEmail, contactPersonMobile, password } = req.body;
 
@@ -167,7 +167,7 @@ router.post("/businessLogin", async (req, res) => {
   }
 });
 
-router.post("/businessUser/forgotPassword", async (req, res) => {
+router.post("/businessUserForgotPassword", async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -198,7 +198,7 @@ router.post("/businessUser/forgotPassword", async (req, res) => {
   }
 });
 
-router.post("/businessUser/resetPassword", async (req, res) => {
+router.post("/BusinessUserResetPassword", async (req, res) => {
   try {
     const { otp, newPassword, confirmNewPassword, email } = req.body;
 
