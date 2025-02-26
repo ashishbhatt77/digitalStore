@@ -5,9 +5,6 @@ const cors = require("cors");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 
-const userAuth = require("./middleware/userauth");
-const businessAuth = require("./middleware/businessauth");
-
 const app = express();
 
 app.use(
@@ -35,13 +32,13 @@ const connectDB = async () => {
 };
 connectDB();
 
-const productApi = require("./Router/productApi");
-const userApi = require("./Router/userApi");
-const superAdminApi = require("./Router/superAdminApi");
-const businessApi = require("./Router/businessApi");
-const cartApi = require("./Router/cartApi");
-const checkoutApi = require("./Router/checkoutApi")
-const orderApi = require("./Router/orderApi");
+const productApi = require("./routes/productRoutes");
+const userApi = require("./routes/authRoutes");
+const superAdminApi = require("./routes/adminRoutes");
+const businessApi = require("./routes/sellerRoutes");
+const cartApi = require("./routes/cartRoutes");
+const checkoutApi = require("./routes/checkoutRoutes")
+const orderApi = require("./routes/orderRoutes");
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

@@ -5,31 +5,44 @@ const productSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true, 
-    },
-    category: {
-      type: String,
-      required: true,
-      trim: true, 
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: [0, "Price cannot be negative"], 
-    },
-    img: {
-      type: String, 
-      default: null,
-    },
-    stock: {
-      type: Number,
-      required: true,
-      min: [0, "Stock cannot be negative"], 
+      trim: true,
     },
     description: {
       type: String,
       required: true,
-      trim: true, 
+      trim: true,
+    },
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    compareAtPrice: {
+      type: Number,
+    },
+    images: {
+      type: [String],
+      default: [],
+    },
+    stock: {
+      type: Number,
+      required: true,
+    },
+    trackQuantity: {
+      type: Number,
+      default: true,
+    },
+    status: {
+      type: String,
+      default: "active",
+    },
+    tags: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true }

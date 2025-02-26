@@ -1,13 +1,9 @@
-const express = require("express");
-const Order = require("../model/orderSchema");
-const Cart = require("../model/cartSchema");
-const Product = require("../model/productSchema");
-const businessAuth = require("../middleware/businessauth");
-
-const router = express.Router();
+const Order = require("../models/orderModel");
+const Cart = require("../models/cartModel");
+const Product = require("../models/productModel");
 
 // ✅ Checkout API (Place Order)
-router.post("/checkout", businessAuth, async (req, res) => {
+const checkout = async (req, res) => {
   try {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate("items.product");
@@ -19,7 +15,7 @@ router.post("/checkout", businessAuth, async (req, res) => {
     let totalPrice = 0;
     for (const item of cart.items) {
       totalPrice += item.product.price * item.quantity;
-      
+
       // ✅ Update stock
       const product = await Product.findById(item.product._id);
       if (!product || product.stock < item.quantity) {
@@ -47,6 +43,7 @@ router.post("/checkout", businessAuth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error during checkout", error: err.message });
   }
-});
+};
 
-module.exports = router;
+// 📌 **Export all functions from here**
+module.exports = { checkout };

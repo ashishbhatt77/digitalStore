@@ -8,14 +8,13 @@ const UserSchema = new mongoose.Schema(
     category: { type: [String], required: true },
     businessName: { type: String, required: true, trim: true },
     registrationNumber: { type: String, required: true, trim: true },
-    registrationAuthority: { type: String, required: true, trim: true },
     registrationDate: { type: Date, required: true },
     directorName: { type: String, required: true, trim: true },
-    contactPersonName: { type: String, required: true, trim: true },
-    contactPersonEmail: { type: String, required: true, lowercase: true, trim: true },
-    contactPersonDesignation: { type: String, required: true, trim: true },
-    contactPersonMobile: { type: String, required: true, unique: true, trim: true },
+    businessEmail: { type: String, required: true, lowercase: true, trim: true },
+    businessDesignation: { type: String, required: true, trim: true },
+    businessMobile: { type: String, required: true, unique: true, trim: true },
     password: { type: String, required: true },
+    gstNumber : {type : String}
   },
 );
 

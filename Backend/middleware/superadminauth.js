@@ -8,11 +8,9 @@ const adminAuth = (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized access. No token provided." });
     }
 
-    // Token verify karo
     const decoded = jwt.verify(token, process.env.SJWT_SECRET);
     req.user = decoded;
 
-    // ✅ Admin role check karo
     if (req.user.role !== "Admin") {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }

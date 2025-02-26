@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   cartId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cart",
-    default: null, // ✅ Ensure new users don’t have a cart by default
+    default: null
   },
 }, { timestamps: true });
 

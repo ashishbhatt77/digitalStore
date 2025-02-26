@@ -8,11 +8,9 @@ const businessAuth = (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized access. No token provided." });
     }
 
-    // Verify token using Business JWT Secret
     const decoded = jwt.verify(token, process.env.BJWT_SECRET);
     req.user = decoded;
 
-    // 🛑 Check if role is Business
     if (req.user.role !== "Business") {
       return res.status(403).json({ message: "Access denied. Business users only." });
     }

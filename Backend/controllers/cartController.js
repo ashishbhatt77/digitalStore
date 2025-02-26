@@ -1,15 +1,10 @@
-const express = require("express");
-const Cart = require("../model/cartSchema");
-const Product = require("../model/productSchema");
-const userauth = require("../middleware/userauth");
-
-const router = express.Router();
+const Cart = require("../models/cartModel");
 
 // ✅ Add Item to Cart
-router.post("/cart", userauth, async (req, res) => {
+const addToCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
-    const userId = req.user._id; // Auth middleware se mil raha h
+    const userId = req.user._id;
 
     if (!productId || !quantity) {
       return res.status(400).json({ message: "Product and quantity are required" });
@@ -33,10 +28,10 @@ router.post("/cart", userauth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error adding to cart", error: err.message });
   }
-});
+};
 
 // ✅ Remove Item from Cart
-router.delete("/cart/:productId", userauth, async (req, res) => {
+const removeFromCart = async (req, res) => {
   try {
     const userId = req.user._id;
     const { productId } = req.params;
@@ -53,10 +48,10 @@ router.delete("/cart/:productId", userauth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error removing product", error: err.message });
   }
-});
+};
 
 // ✅ Update Cart Item Quantity
-router.put("/cart", userauth, async (req, res) => {
+const updateCart = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
     const userId = req.user._id;
@@ -82,10 +77,10 @@ router.put("/cart", userauth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error updating cart", error: err.message });
   }
-});
+};
 
 // ✅ Get User's Cart
-router.get("/cart", userauth, async (req, res) => {
+const getUserCart = async (req, res) => {
   try {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate("items.product");
@@ -98,6 +93,12 @@ router.get("/cart", userauth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error fetching cart", error: err.message });
   }
-});
+};
 
-module.exports = router;
+// 📌 **All exports in one place**
+module.exports = {
+  addToCart,
+  removeFromCart,
+  updateCart,
+  getUserCart,
+};
