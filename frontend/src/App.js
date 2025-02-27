@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 import Header from './Component/Header';
 import Home from './Component/Home';
-import NavBar from './Component/NavBar';
+import { useState } from "react";
 import Login from './Component/Login';
 import Footer from "./Component/Footer";
 import UserLogin from './Component/UserLogin';
@@ -18,6 +18,10 @@ import Books from './Component/Books';
 import Fashion from './Component/Fashion';
 import Computer from './Component/Computer';
 import Electronic from './Component/Electronic';
+import ResetPassword from './Component/ResetPassword';
+import ProductsAdd from './Component/ProductsAdd';
+import { ContextApi } from "./Component/Context_Api";
+import ReadyeCommerce from './Component/Ready eCommerce';
 
 
 
@@ -28,10 +32,14 @@ import Electronic from './Component/Electronic';
 
 
 function App() {
+  const[cart,setCart]=useState("")
+  const [loginname,setLoginName]=useState(localStorage.getItem("loginname"))
+  const [token,setToken]=useState(localStorage.getItem("token"))
   return (
+    <ContextApi.Provider value={{loginname,setLoginName,cart,setCart,token,setToken}}>
     <Router>
       <Header />
-      <NavBar/>
+     
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/Login" element={<Login/>} />
@@ -47,6 +55,10 @@ function App() {
         <Route path="/Fashion" element={<Fashion/>} />
         <Route path="/Computer" element={<Computer/>} />
         <Route path="/Electronic" element={<Electronic/>} />
+        <Route path="/Resetpassword" element={<ResetPassword/>} />
+        <Route path="/AddProducts" element={<ProductsAdd/>} />
+        <Route path="/Redycommerces" element={<ReadyeCommerce/>} />
+       
        
         
         
@@ -60,6 +72,7 @@ function App() {
       </Routes>
       <Footer />
     </Router>
+    </ContextApi.Provider>
   );
 }
 

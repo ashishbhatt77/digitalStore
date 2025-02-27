@@ -1,10 +1,19 @@
 import React from "react";
 import { motion } from "framer-motion";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Link } from "react-router-dom";
-
+import { Link  } from "react-router-dom";
+import { useEffect,useState } from "react";
 
 const DealsOffers = () => {
+
+  const [Deals, setDeals] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/deals") 
+      .then((response) => response.json())
+      .then((data) => setDeals(data))
+      .catch((error) => console.error("Error fetching deals:", error));
+  }, []);
     const deals = [
       { id: 1, name: "Smartphone", discount: "20% OFF", image: "realistic-smartphone-device_.avif" },
       { id: 2, name: "Laptop", discount: "15% OFF", image: "macbook-laptop.avif" },

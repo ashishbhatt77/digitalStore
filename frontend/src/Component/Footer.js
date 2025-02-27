@@ -21,6 +21,7 @@ function Footer() {
               Your one-stop solution for all digital products. Get the best deals on software, tools, and services.
             </p>
           </div>
+          
 
           
           <div className="col-md-2 col-lg-2 col-xl-2 mx-auto mb-4">

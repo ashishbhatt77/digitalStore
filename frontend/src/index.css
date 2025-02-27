@@ -1,16 +1,16 @@
-#header {
+#Header {
  background: linear-gradient(rgb(0, 0, 0),rgb(141, 139, 139));
 
 
 }
-#header img{
+#Header img{
   height: 50px;
 }
-#Navbar {
+ #Header.Navbar {
   background-color: #6b6bf0;
   
 }
-#header .custom-navbar .nav-link svg {
+#Header .custom-navbar .nav-link svg {
   color: rgb(254, 254, 255) !important;
 }
 
@@ -22,19 +22,6 @@
 #slider{
   width: 100%;
   height:auto;
-}
- #Navbar.fixed-navbar {
-  position: fixed; 
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: #343a40;
-  z-index: 1000; 
-  padding: 10px 0;
-}
-
-#Navbar .body {
-  margin-top: 60px;
 }
 #Footer {
   background: linear-gradient(rgb(22, 22, 22),rgb(9,15,34));
@@ -49,13 +36,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; /* Full Screen Height */
-  background-color: #f8f9fa; /* Light Grey Background */
+  height: 100vh; 
+  background-color: #f8f9fa; 
 }
 
 .card {
   border-radius: 10px;
-  max-width: 450px; /* Form Width Limit */
+  max-width: 450px; 
 }
 
 .carousel-item {
@@ -76,3 +63,17 @@
     transform: scale(1);
   }
 }
+
+
+@tailwind base;
+@tailwind components;
+
+.btn-primary {
+  @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700;
+}
+
+@tailwind utilities;
+
+
+
+

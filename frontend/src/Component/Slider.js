@@ -3,6 +3,8 @@ import React, { useEffect } from "react";
 function Slider() {
   useEffect(() => {
     require("bootstrap/dist/js/bootstrap.bundle.min"); 
+
+    
   }, []);
 
   return (
