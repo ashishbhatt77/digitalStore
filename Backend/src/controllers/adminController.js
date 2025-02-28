@@ -2,7 +2,6 @@ const User = require('../models/userModel');
 const Seller = require('../models/sellerModel');
 const Order = require('../models/orderModel');
 
-
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find().select('-password');
@@ -17,7 +16,7 @@ const approveSeller = async (req, res) => {
         const seller = await Seller.findById(req.params.id);
         if (!seller) return res.status(404).json({ message: "Seller not found" });
 
-        seller.isApproved = true;
+        seller.approved = true;
         await seller.save();
 
         res.json({ success: true, message: "Seller Approved", seller });

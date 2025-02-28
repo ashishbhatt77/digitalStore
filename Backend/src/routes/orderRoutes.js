@@ -7,12 +7,11 @@ const {
   updateOrderStatus,
 } = require("../controllers/orderController");
 
-const userAuth = require("../middleware/userauth");
-const businessAuth = require("../middleware/businessauth");
+const { protect, isSeller } = require("../middleware/authMiddleware");
 
-router.post("/order", userAuth, placeOrder);
-router.get("/orders", userAuth, getUserOrders);
-router.get("/order/:id", userAuth, getOrderById);
-router.put("/order/:id/status", businessAuth, updateOrderStatus);
+router.post("/order", protect, placeOrder);
+router.get("/orders", protect, getUserOrders);
+router.get("/order/:id", protect, getOrderById);
+router.put("/order/:id/status", protect, isSeller, updateOrderStatus);
 
 module.exports = router;

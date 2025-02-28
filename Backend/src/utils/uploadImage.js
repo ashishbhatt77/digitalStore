@@ -15,7 +15,7 @@ const uploadImage = async (buffer) => {
         }
       );
 
-      stream.end(buffer); // Uploading file buffer to Cloudinary
+      stream.end(buffer);
     });
   } catch (error) {
     console.error("Upload Failed:", error);

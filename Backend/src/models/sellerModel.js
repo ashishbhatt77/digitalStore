@@ -14,7 +14,8 @@ const UserSchema = new mongoose.Schema(
     businessDesignation: { type: String, required: true, trim: true },
     businessMobile: { type: String, required: true, unique: true, trim: true },
     password: { type: String, required: true },
-    gstNumber : {type : String}
+    gstNumber : {type : String},
+    approved: { type: Boolean, default: false }
   },
 );
 

@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { checkout } = require("../controllers/checkoutController");
-const businessAuth = require("../middleware/businessauth");
+const { protect } = require("../middleware/authMiddleware");
 
 // ✅ Checkout Route
-router.post("/checkout", businessAuth, checkout);
+router.post("/checkout", protect, checkout);
 
 module.exports = router;

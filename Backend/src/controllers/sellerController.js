@@ -39,14 +39,14 @@ const registerBusinessUser = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match." });
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { businessPersonMobile: userData.businessPersonMobile }] });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email or mobile number already registered." });
+      return res.status(400).json({ message: "Email already registered." });
     }
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     tempUserStore[email] = {
-      userData: { ...userData, email, password: await bcrypt.hash(password, 10) },
+      userData: { ...userData, email, password: await bcrypt.hash(password, 10), approved: false },
       otp,
       otpExpiration: Date.now() + 300000,
     };
@@ -77,7 +77,10 @@ const loginBusinessUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email?.trim().toLowerCase() });
-    if (!user || !(await bcrypt.compare(password, user.password))) return res.status(400).json({ message: "Invalid credentials." });
+    if (!user) return res.status(400).json({ message: "Invalid credentials." });
+    if (!user.approved) return res.status(403).json({ message: "Your account is not approved yet." });
+    
+    if (!(await bcrypt.compare(password, user.password))) return res.status(400).json({ message: "Invalid credentials." });
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
     res.status(200).json({ token, message: "Login successful." });
   } catch (error) {

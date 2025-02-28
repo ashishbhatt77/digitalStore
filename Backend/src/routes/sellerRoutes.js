@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const businessUserController = require("../controllers/sellerController");
+const { protect, isSeller } = require("../middleware/authMiddleware");
 
 router.post("/BusinessRegister", businessUserController.registerBusinessUser);
 router.post("/BusinessUserVerifyOtp", businessUserController.verifyBusinessUserOtp);
@@ -10,8 +11,8 @@ router.post("/BusinessForgotPassword", businessUserController.forgotPasswordBusi
 router.post("/BusinessResetPassword", businessUserController.resetPasswordBusinessUser);
 
 router.route("/BusinessUser/:id")
-  .get(businessUserController.getUser)
-  .put(businessUserController.updateUser)
-  .delete(businessUserController.deleteUser);
+  .get(protect, isSeller, businessUserController.getUser)
+  .put(protect, isSeller, businessUserController.updateUser)
+  .delete(protect, isSeller, businessUserController.deleteUser);
 
 module.exports = router;
